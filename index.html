@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#16834a">
+<meta name="description" content="ECOPRICE — калькулятор закупки, цены продажи и прибыли.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>ECOPRICE — калькулятор товаров</title>
+<style>
+:root{--green:#16834a;--dark:#0d6134;--pale:#eaf7ef;--bg:#f4f8f5;--ink:#173326;--muted:#668073;--line:#dce9df;--red:#c43c3c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{background:linear-gradient(135deg,var(--green),var(--dark));color:#fff;padding:22px 18px 18px;border-radius:0 0 22px 22px}
+.brand{font-size:25px;font-weight:900;letter-spacing:1.2px}.sub{opacity:.88;font-size:13px;margin-top:3px}
+main{max-width:760px;margin:auto;padding:14px 14px 90px}
+.tabs{display:flex;gap:8px;margin:14px 0}.tab{flex:1;border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px;font-weight:700;color:var(--muted)}.tab.active{background:var(--green);border-color:var(--green);color:#fff}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 3px 12px #174b2410}
+h2{font-size:17px;margin:0 0 13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.field{min-width:0}.field.full{grid-column:1/-1}label{display:block;color:var(--muted);font-size:12px;font-weight:700;margin:0 0 5px}
+input{width:100%;border:1px solid #cfdfd3;border-radius:10px;padding:12px 11px;font:inherit;color:var(--ink);background:#fff;outline:none}input:focus{border-color:var(--green);box-shadow:0 0 0 3px #16834a18}
+button{border:0;border-radius:11px;padding:12px 14px;font:700 14px system-ui;cursor:pointer}.primary{background:var(--green);color:#fff;width:100%;margin-top:14px}.secondary{background:var(--pale);color:var(--dark)}.danger{background:#fff0f0;color:var(--red)}.small{padding:8px 10px;font-size:12px}
+.result{background:var(--pale);border-radius:13px;padding:14px;margin-top:14px}.resultTop{display:flex;justify-content:space-between;gap:10px;align-items:center}.result strong{font-size:25px;color:var(--dark)}.muted{color:var(--muted);font-size:12px}.calcrows{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.metric{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px}.metric span{display:block;color:var(--muted);font-size:11px}.metric b{font-size:15px}
+.summary{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.summary .metric b{font-size:19px}
+.item{border:1px solid var(--line);border-radius:13px;padding:13px;margin:10px 0}.itemhead{display:flex;justify-content:space-between;gap:8px}.itemname{font-weight:800;overflow-wrap:anywhere}.itemgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:5px 10px;margin:9px 0}.itemgrid div{font-size:12px;color:var(--muted)}.itemgrid b{color:var(--ink);font-size:13px}.actions{display:flex;gap:7px;flex-wrap:wrap}
+.hidden{display:none!important}.empty{text-align:center;color:var(--muted);padding:25px 10px}.note{font-size:12px;color:var(--muted);margin-top:10px}.topline{display:flex;align-items:center;justify-content:space-between;gap:8px}.pill{font-size:11px;background:var(--pale);color:var(--dark);padding:4px 8px;border-radius:30px;font-weight:700}
+@media(max-width:390px){.grid{gap:8px}.card{padding:13px}.calcrows{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header><div class="brand">ECOPRICE</div><div class="sub">Умный расчёт закупки и продажи</div></header>
+<main>
+  <div class="tabs">
+    <button class="tab active" id="tabCalc" onclick="showTab('calc')">Калькулятор</button>
+    <button class="tab" id="tabItems" onclick="showTab('items')">Мои товары <span id="countBadge"></span></button>
+  </div>
+
+  <section id="calcPage">
+    <div class="card">
+      <h2 id="formTitle">Добавить расчёт</h2>
+      <div class="grid">
+        <div class="field"><label for="yuan">Закупка за 1 шт. (¥)</label><input id="yuan" type="number" min="0" step="0.01" inputmode="decimal" placeholder="2.01"></div>
+        <div class="field"><label for="rate">Курс юаня (сомони)</label><input id="rate" type="number" min="0" step="0.0001" inputmode="decimal" value="1.43"></div>
+        <div class="field"><label for="multiplier">Множитель цены</label><input id="multiplier" type="number" min="0" step="0.1" inputmode="decimal" value="2"></div>
+        <div class="field full"><label for="shipping">Дорожные расходы (%)</label><input id="shipping" type="number" min="0" step="0.1" inputmode="decimal" value="35"></div>
+      </div>
+      <div class="result">
+        <div class="resultTop"><div><div class="muted">Расчётная цена продажи за 1 шт.</div><strong id="sale">0.00 с.</strong></div><span class="pill">ECOPRICE</span></div>
+        <div class="calcrows">
+          <div class="metric"><span>Закупка в сомони / шт.</span><b id="buySomoni">0.00 с.</b></div>
+          <div class="metric"><span>Цена после × множитель</span><b id="afterMult">0.00 с.</b></div>
+          <div class="metric"><span>Дорожные расходы по формуле</span><b id="roadFormula">0.00 с.</b></div>
+          <div class="metric"><span>Ориентир. себестоимость / шт.</span><b id="cost">0.00 с.</b></div>
+          <div class="metric"><span>Прибыль / шт.</span><b id="profit">0.00 с.</b></div>
+          <div class="metric"><span>Прибыль за всё количество</span><b id="totalProfit">0.00 с.</b></div>
+        </div>
+      </div>
+      <button class="primary" id="saveBtn" onclick="saveItem()">Сохранить товар</button>
+      <button class="secondary" id="cancelEdit" style="display:none;width:100%;margin-top:8px" onclick="resetForm()">Отменить редактирование</button>
+      <div class="note">Формула цены продажи: закупка в сомони × множитель × (1 + дорожные расходы %). Для оценки прибыли себестоимость считается как закупка + дорожные расходы от закупки. Это ориентировочный расчёт.</div>
+    </div>
+  </section>
+
+  <section id="itemsPage" class="hidden">
+    <div class="card">
+      <div class="topline"><h2>Мои товары</h2><button class="secondary small" onclick="exportCSV()">Экспорт CSV</button></div>
+      <div class="summary">
+        <div class="metric"><span>Позиций</span><b id="sumPositions">0</b></div>
+        <div class="metric"><span>Закупка + логистика</span><b id="sumCost">0.00 с.</b></div>
+        <div class="metric"><span>Ожидаемая прибыль</span><b id="sumProfit">0.00 с.</b></div>
+      </div>
+    </div>
+    <div id="itemsList"></div>
+    <button class="danger" style="width:100%;margin-top:12px" onclick="clearAll()">Удалить все товары</button>
+    <div class="note">Данные сохраняются в памяти браузера на этом устройстве. Не очищай данные сайта/браузера, чтобы не потерять список. Экспортируй CSV как резервную копию.</div>
+  </section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const money = n => (Number.isFinite(n)?n:0).toFixed(2) + ' с.';
+const num = id => Math.max(0, Number($(id).value) || 0);
+let products = [];
+let editingId = null;
+try { products = JSON.parse(localStorage.getItem('ecoprice_products_v1') || '[]'); if(!Array.isArray(products)) products=[]; } catch(e){ products=[]; }
+
+function calculate(){
+  const yuan=num('yuan'), rate=num('rate');
+  const mult=num('multiplier'), shipping=num('shipping');
+  const buy=yuan*rate;
+  const after=buy*mult;
+  const roadFormula=after*shipping/100;
+  const sale=after+roadFormula;
+  const cost=buy*(1+shipping/100);
+  const profit=sale-cost;
+  $('buySomoni').textContent=money(buy);
+  $('afterMult').textContent=money(after);
+  $('roadFormula').textContent=money(roadFormula);
+  $('sale').textContent=money(sale);
+  $('cost').textContent=money(cost);
+  $('profit').textContent=money(profit);
+  $('totalProfit').textContent=money(profit);
+  return {yuan,rate,mult,shipping,buy,after,roadFormula,sale,cost,profit};
+}
+['yuan','rate','multiplier','shipping'].forEach(id=>$(id).addEventListener('input',calculate));
+function persist(){localStorage.setItem('ecoprice_products_v1',JSON.stringify(products));renderItems();}
+function saveItem(){
+  const c=calculate();
+  if(c.yuan<=0||c.rate<=0){alert('Укажи закупочную цену и курс больше нуля.');return;}
+  const item={id:editingId||((Date.now().toString(36))+Math.random().toString(36).slice(2,7)),...c,updatedAt:new Date().toISOString()};
+  if(editingId){const i=products.findIndex(p=>p.id===editingId);if(i>=0)products[i]=item;else products.push(item);}
+  else products.unshift(item);
+  persist();resetForm();showTab('items');
+}
+function editItem(id){
+  const p=products.find(x=>x.id===id);if(!p)return;
+  editingId=id;$('yuan').value=p.yuan;$('rate').value=p.rate;$('multiplier').value=p.mult;$('shipping').value=p.shipping;
+  $('formTitle').textContent='Редактировать товар';$('saveBtn').textContent='Сохранить изменения';$('cancelEdit').style.display='block';calculate();showTab('calc');window.scrollTo({top:0,behavior:'smooth'});
+}
+function deleteItem(id){if(!confirm('Удалить этот товар?'))return;products=products.filter(p=>p.id!==id);persist();}
+function resetForm(){editingId=null;$('yuan').value='';$('formTitle').textContent='Добавить расчёт';$('saveBtn').textContent='Сохранить товар';$('cancelEdit').style.display='none';calculate();}
+function showTab(tab){
+  const isCalc=tab==='calc';$('calcPage').classList.toggle('hidden',!isCalc);$('itemsPage').classList.toggle('hidden',isCalc);
+  $('tabCalc').classList.toggle('active',isCalc);$('tabItems').classList.toggle('active',!isCalc);
+  if(!isCalc)renderItems();
+}
+function renderItems(){
+  $('countBadge').textContent=products.length?'('+products.length+')':'';
+  const cost=products.reduce((s,p)=>s+(+p.cost||0),0);
+  const profit=products.reduce((s,p)=>s+(+p.profit||0),0);
+  $('sumPositions').textContent=products.length;$('sumCost').textContent=money(cost);$('sumProfit').textContent=money(profit);
+  if(!products.length){$('itemsList').innerHTML='<div class="card empty">Пока нет сохранённых расчётов.<br>Добавь первый расчёт в калькуляторе.</div>';return;}
+  $('itemsList').innerHTML=products.map((p,index)=>`
+    <article class="item">
+      <div class="itemhead"><div class="itemname">Расчёт №${index+1}</div><span class="pill">ECOPRICE</span></div>
+      <div class="itemgrid">
+        <div>Закупка: <b>${Number(p.yuan).toFixed(2)} ¥</b></div>
+        <div>Курс: <b>${Number(p.rate).toFixed(4)}</b></div>
+        <div>Закупка в сомони: <b>${money(p.buy)}</b></div>
+        <div>Цена продажи: <b>${money(p.sale)}</b></div>
+        <div>Себестоимость: <b>${money(p.cost)}</b></div>
+        <div>Прибыль за шт.: <b>${money(p.profit)}</b></div>
+        <div>Прибыль: <b>${money(p.profit)}</b></div>
+      </div>
+      <div class="actions"><button class="secondary small" onclick="editItem('${p.id}')">Изменить</button><button class="danger small" onclick="deleteItem('${p.id}')">Удалить</button></div>
+    </article>`).join('');
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function exportCSV(){
+  if(!products.length){alert('Список товаров пуст.');return;}
+  const rows=[['Номер расчёта','Закупка ¥','Курс','Закупка сомони','Множитель','Дорога %','Цена продажи','Себестоимость','Прибыль']];
+  products.forEach((p,i)=>rows.push([i+1,p.yuan,p.rate,p.buy,p.mult,p.shipping,p.sale,p.cost,p.profit]));
+  const csv='\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='ecoprice_tovary.csv';a.click();URL.revokeObjectURL(url);
+}
+function clearAll(){if(!products.length)return;if(!confirm('Точно удалить все сохранённые товары? Сначала можно экспортировать CSV.'))return;products=[];persist();}
+calculate();renderItems();
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
